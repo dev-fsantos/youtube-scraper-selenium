@@ -1,0 +1,6 @@
+__pycache__/
+.venv/
+*.log
+debug_likes.html
+todos_labels.txt
+debug.py
