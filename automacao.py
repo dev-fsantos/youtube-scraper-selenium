@@ -1,35 +1,10 @@
 from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 import json
 import time
 import re
-
-navegador = webdriver.Chrome()
-
-navegador.maximize_window()
-
-navegador.get("https://youtube.com.br")
-
-time.sleep(5)
-
-pesquisar = navegador.find_element("name", "search_query")
-
-pesquisar.send_keys("Alanzoka", Keys.ENTER)
-time.sleep(2)
-
-navegador.execute_script("window.scrollBy(0, 100)")
-try:
-    primeiro_video = WebDriverWait(navegador, 15).until(
-        EC.presence_of_element_located((By.CSS_SELECTOR, "ytd-video-renderer #video-title"))
-    )
-    navegador.execute_script("arguments[0].click();", primeiro_video)
-except Exception as e:
-    print("Erro ao tentar abrir o vídeo:", e)
-time.sleep(2)
-
 
 def esperar_texto(by, valor, timeout=15):
     def condicao(navegador):
@@ -41,35 +16,33 @@ def esperar_texto(by, valor, timeout=15):
             return False
     return WebDriverWait(navegador, timeout).until(condicao)
 
-
-def listar_todos_aria_labels(navegador):
+def listar_todos_textos(navegador):
     script = """
-    function coletarLabels(root, lista) {
+    function coletarTextos(root, lista) {
         const elementos = root.querySelectorAll('*');
         for (const el of elementos) {
-            const label = el.getAttribute && el.getAttribute('aria-label');
-            if (label) {
-                lista.push(label);
+            const tag = el.tagName ? el.tagName.toLowerCase() : '';
+            if (tag === 'script' || tag === 'style') {
+                continue;
+            }
+            if (el.children.length === 0 && el.innerText && el.innerText.trim() !== '' && el.innerText.length < 200) {
+                lista.push(el.innerText.trim());
             }
             if (el.shadowRoot) {
-                coletarLabels(el.shadowRoot, lista);
+                coletarTextos(el.shadowRoot, lista);
             }
         }
         return lista;
     }
-    return coletarLabels(document, []);
+    return coletarTextos(document, []);
     """
     return navegador.execute_script(script)
 
-
-def buscar_label_likes_video(navegador):
-    todos = listar_todos_aria_labels(navegador)
-    candidatos = [
-        label for label in todos
-        if "gostei" in label.lower() and "coment" not in label.lower()
-    ]
-    return candidatos[0] if candidatos else None
-
+def buscar_texto_com_termo(lista_textos, termo):
+    for texto in lista_textos:
+        if termo in texto.lower():
+            return texto
+    return None
 
 def extrair_numero_do_texto(texto):
     if not texto:
@@ -79,60 +52,53 @@ def extrair_numero_do_texto(texto):
         return match.group()
     return None
 
+def buscar_visualizacoes(lista_textos):
+    for texto in lista_textos:
+        texto_limpo = texto.lower()
 
-def coleta_dados():
-    try:
-        elemento = esperar_texto(By.CSS_SELECTOR, "h1.ytd-watch-metadata, #title h1")
-        titulo_video = elemento.text.strip()
-    except Exception as e:
-        print("Falhou título:", e)
-        titulo_video = "Não identificado"
+        if "visualiza" in texto_limpo and extrair_numero_do_texto(texto):
+            return texto
 
-    try:
-        elemento = esperar_texto(By.CSS_SELECTOR, "ytd-channel-name #text-container")
-        nome_canal = elemento.text.strip()
-    except Exception as e:
-        print("Falhou canal:", e)
-        nome_canal = "Não identificado"
+    return None
 
-    try:
-        elemento = esperar_texto(By.ID, "owner-sub-count")
-        num_inscritos = elemento.text.strip()
-    except Exception as e:
-        print("Falhou inscritos:", e)
-        num_inscritos = "Não identificado"
+def coleta_dados_canal(canal_buscado):
+    time.sleep(2)
 
-    try:
-        label_likes = buscar_label_likes_video(navegador)
-        likes = extrair_numero_do_texto(label_likes)
-        if likes is None:
-            likes = "Não identificado"
-    except Exception as e:
-        print("Falhou likes:", e)
-        likes = "Não identificado"
-
-    navegador.execute_script("window.scrollBy(0, 600)")
-    time.sleep(3)
-
-    comentarios = navegador.find_elements(By.CSS_SELECTOR, "#content-text")
+    todos_textos = listar_todos_textos(navegador)
+    texto_inscritos = buscar_texto_com_termo(todos_textos, "inscrit")
+    texto_visualizacoes = buscar_visualizacoes(todos_textos)
 
     return {
-        "canal": nome_canal,
-        "inscritos": num_inscritos,
-        "video": titulo_video,
-        "likes": likes,
-        "comentarios": [comentario.text for comentario in comentarios[:5] if comentario.text]
+        "canal_buscado": canal_buscado,
+        "inscritos_texto": texto_inscritos if texto_inscritos else "Não identificado",
+        "visualizacoes_texto": texto_visualizacoes if texto_visualizacoes else "Não identificado"
     }
 
+def pedir_canais():
+    entrada = input("Digite os canais que deseja analisar, separados por vírgula: ")
+    lista_canais = entrada.split(",")
+    lista_canais_limpa = [canal.strip() for canal in lista_canais]
+    return lista_canais_limpa
 
-dados = coleta_dados()
+canais = pedir_canais()
+navegador = webdriver.Chrome()  
+navegador.maximize_window()
+todos_dados = []
 
-print("Nome do canal:", dados["canal"], "Nº de inscritos:", dados["inscritos"], "Título do vídeo:", dados["video"], "Nº de likes:", dados["likes"])
+for canal in canais:
+    print(f"\n--- Coletando dados de {canal}")
 
-for comentario in dados["comentarios"]:
-    print("-", comentario)
+    navegador.get(f"https://www.youtube.com/@{canal}/about")
+    time.sleep(5)
+
+    dados = coleta_dados_canal(canal)
+    todos_dados.append(dados)
+
 
 with open("dados_youtube.json", "w", encoding="utf-8") as arquivo:
-    json.dump(dados, arquivo, ensure_ascii=False, indent=4)
+    json.dump(todos_dados, arquivo, ensure_ascii=False, indent=4)
 
-print("Dados salvos com sucesso no arquivo dados_youtube.json")
+print("\n Dados de todos os canais salvos com sucesso!")
+
+navegador.quit()
+
