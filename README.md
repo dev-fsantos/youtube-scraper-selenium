@@ -1,6 +1,6 @@
 # YouTube Data Extraction & Analysis Pipeline
 
-Pipeline automatizado em Python desenvolvido para extração, higienização e análise de dados de canais do YouTube, superando barreiras de renderização assíncrona e Web Components.
+Pipeline automatizado em Python desenvolvido para extração e análise de dados de canais do YouTube, superando barreiras de renderização assíncrona e Web Components.
 
 ## 🛠️ Tecnologias Utilizadas
 * **Linguagem**: Python 3
