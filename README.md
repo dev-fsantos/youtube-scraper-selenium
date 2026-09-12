@@ -1,14 +1,22 @@
-# YouTube Web Scraper com Selenium
+# YouTube Data Extraction & Analysis Pipeline
 
-Automação em Python desenvolvida para raspagem de dados e comentários de vídeos do YouTube usando Selenium WebDriver.
+Pipeline automatizado em Python desenvolvido para extração, higienização e análise de dados de canais do YouTube, superando barreiras de renderização assíncrona e Web Components.
 
-Algumas funcionalidades: 
-Navegação Dinâmica: Realiza pesquisas no YouTube e acessa vídeos utilizando seletores CSS/ID precisos, dispensando coordenadas de tela.
+## 🛠️ Tecnologias Utilizadas
+* **Linguagem**: Python 3
+* **Automação Web**: Selenium WebDriver
+* **Manipulação de DOM**: JavaScript Injection (Shadow DOM Traversal)
+* **Engenharia de Dados**: Pandas, Regex, JSON
 
-Coleta de Metadados: Extrai automaticamente o nome do canal, total de inscritos, título do vídeo e número de visualizações.
+## 💡 Destaques Técnicos e Funcionalidades
+* **Navegação Recursiva em Shadow DOM**: Injeção de script em JavaScript para atravessar recursivamente a estrutura de *ShadowRoot* do YouTube, acessando nós encapsulados que seletores CSS/XPath convencionais não alcançam.
+* **Resiliência a Carregamento Assíncrono**: Validação de dados via Regex e checagens dinâmicas de texto, evitando falhas por *TimeoutException* ou leitura de avisos da interface.
+* **Pipeline de Dados Desacoplado**:
+  * `automacao.py`: Extração e persistência estruturada em formato JSON.
+  * `analise.py`: Leitura do JSON, tratamento/normalização de strings métricas e preparação do dataset para análise via Pandas.
 
-Raspagem de Comentários: Rola a página para acionar o carregamento dinâmico e captura os 5 principais comentários.
+## 🚀 Como Executar o Projeto
 
-Tratamento de Tempo Dinâmico: Implementa WebDriverWait para aguardar a renderização correta dos elementos no navegador antes de tentar a leitura.
-
-Tecnologias Utilizadas: Python 3, Selenium WebDriver (Módulos By, WebDriverWait, expected_conditions)
+1. Instale as dependências:
+   ```bash
+   pip install selenium pandas
