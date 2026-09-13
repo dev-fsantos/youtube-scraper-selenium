@@ -45,7 +45,7 @@ df_ordenado = df.sort_values("taxa_engajamento", ascending=False)
 
 plt.figure(figsize=(8, 5))
 plt.bar(df_ordenado["canal_buscado"], df_ordenado["taxa_engajamento"], color="orange")
-plt.title("Visualizações Totais / Inscrotor por canal")
+plt.title("Visualizações Totais / Inscritos por canal")
 plt.ylabel("Proporção (views totais por inscrito)")
 plt.xlabel("Canal")
 plt.xticks(rotation=0)
